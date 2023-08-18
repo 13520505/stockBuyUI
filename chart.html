@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Getting Started with Chart JS with www.chartjs3.com</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            font-family: sans-serif;
+        }
+
+        .chartMenu {
+            width: 100vw;
+            height: 40px;
+            background: #1A1A1A;
+            color: rgba(54, 162, 235, 1);
+        }
+
+        .chartMenu p {
+            padding: 10px;
+            font-size: 20px;
+        }
+
+        .chartCard {
+            width: 100vw;
+            height: calc(100vh - 40px);
+            background: rgba(54, 162, 235, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chartBox {
+            width: 1100px;
+            padding: 20px;
+            border-radius: 20px;
+            border: solid 3px rgba(54, 162, 235, 1);
+            background: white;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chartMenu">
+        <p>STOCK CHART<span id="chartVersion"></span>)</p>
+    </div>
+    <div class="container">
+        <div class="center" style="padding: 12px 20px"><b>Nhập mã cổ phiếu</b></div>
+        <input id="symbol" style="border:none; padding: 12px 20px" type="text"  placeholder="GEX" />
+    </div>
+    <div class="chartCard">
+        <div class="chartBox">
+            <canvas id="myChart"></canvas>
+        </div>
+    </div>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.min.js"></script>
+    <script>
+        // load data json
+        var graphData = {};
+        const labelList = [];
+        const buyList = [];
+        const sellList = [];
+        // setup 
+        const data = {
+            labels: labelList,
+            //   labels:["2023-07-31T00:00:00Z", '2023-08-01T00:00:00Z', '2023-08-02T00:00:00Z', '2023-08-03T00:00:00Z', '2023-08-04T00:00:00Z', '2023-08-07T00:00:00Z', '2023-08-08T00:00:00Z', '2023-08-09T00:00:00Z', '2023-08-10T00:00:00Z', '2023-08-11T00:00:00Z', '2023-08-14T00:00:00Z', '2023-08-15T00:00:00Z', '2023-08-16T00:00:00Z', '2023-08-17T00:00:00Z', '2023-08-18T00:00:00Z'],
+            datasets: [{
+                label: 'Buy',
+                data: buyList,
+                // data: [1075900, 647300, 284500, 200000, 3013100, 1191700, 0, 593300, 2159100, 4025000, 2111300, 0, 814400, 4734100, 0],
+                backgroundColor: 'rgba(255, 26, 104, 1)',
+                borderColor: 'rgba(255, 26, 104, 1)',
+                borderWidth: 1
+            }, {
+                label: 'Sell',
+                data: sellList,
+                // data: [956100,1802300,167500,2811400,603000,1214900,176000,952500,2135600,3275500,1218300,1045100,0,0,4080000],
+                backgroundColor: 'rgba(75, 192, 192, 1)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        };
+
+        // config 
+        const config = {
+            type: 'bar',
+            data,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        };
+
+        // render init block
+        const myChart = new Chart(
+            document.getElementById('myChart'),
+            config
+        );
+
+        // Instantly assign Chart.js version
+        const chartVersion = document.getElementById('chartVersion');
+        chartVersion.innerText = Chart.version;
+        const input = document.getElementById("symbol")
+        input.addEventListener("input", updateValue);
+        var lastSymbol
+        function updateValue(e) {
+            const symbol = input.value
+            if (symbol.length === 3 && symbol !== lastSymbol) {
+                fetch('http://103.82.37.213:8080/v1/order?codes=' + symbol)
+                    .then(response => response.json())
+                    .then(datas => {
+                        labelList.length = 0;
+                        buyList.length = 0;
+                        sellList.length = 0;
+                        // Assign the fetched data to a variable
+                        // Do something with the data
+                        //console.log(dataJson);
+                        const groupedData = new Map();
+                        datas.data.forEach(item => {
+                            groupedData.set(`${item.date_time}-@-buy`, 0);
+                            groupedData.set(`${item.date_time}-@-sell`, 0);
+                        })
+                        datas.data.forEach(item => {
+                            const key = `${item.date_time}-@-${item.type}`;
+                            if (groupedData.has(key)) {
+                                groupedData.set(key, groupedData.get(key) + item.match_qtt);
+                            } else {
+                                //groupedData.set(key, item.match_qtt);
+                            }
+                        });
+                        const result = Array.from(groupedData, ([key, value]) => {
+                            const [date, type] = key.split('-@-');
+                            return { date_time: date, type, match_qtt: value };
+                        });
+                        console.log(result)
+                        // Print the groupedData
+
+                        for (const grpData in result) {
+                            console.log(grpData)
+                            console.log(result[grpData].match_qtt)
+                            if (result[grpData].type === 'buy') {
+                                buyList.push(result[grpData].match_qtt)
+                                labelList.push(result[grpData].date_time)
+                            } else if (result[grpData].type === 'sell') {
+                                sellList.push(result[grpData].match_qtt)
+                            }
+                        }
+                        graphData = { Label: labelList, Buy: buyList, Sell: sellList }
+                        myChart.update()
+
+                    })
+                    .catch(error => {
+                        // Handle any errors
+                        console.error(error);
+                    });
+            }
+        }
+
+    </script>
+
+</body>
+
+</html>
