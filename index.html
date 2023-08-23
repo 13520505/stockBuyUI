@@ -54,7 +54,7 @@
     </div>
     <div class="container">
         <div class="center" style="padding: 12px 20px"><b>Nhập mã cổ phiếu</b></div>
-        <input id="symbol" style="border:none; padding: 12px 20px" type="text"  placeholder="GEX" />
+        <input id="symbol" style="border:none; padding: 12px 20px" type="text" placeholder="GEX" />
     </div>
     <div class="chartCard">
         <div class="chartBox">
@@ -63,6 +63,19 @@
     </div>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.min.js"></script>
     <script>
+        function formatDate(datetimeString) {
+            const date = new Date(datetimeString);
+
+            const day = date.getUTCDate();
+            const month = date.getUTCMonth() + 1; // Months are zero-based
+            const year = date.getUTCFullYear();
+
+            const formattedDate = `${day.toString().padStart(2, "0")}/${month
+                .toString()
+                .padStart(2, "0")}/${year}`;
+
+            return formattedDate;
+        }
         // load data json
         var graphData = {};
         const labelList = [];
@@ -76,15 +89,15 @@
                 label: 'Buy',
                 data: buyList,
                 // data: [1075900, 647300, 284500, 200000, 3013100, 1191700, 0, 593300, 2159100, 4025000, 2111300, 0, 814400, 4734100, 0],
-                backgroundColor: 'rgba(255, 26, 104, 1)',
-                borderColor: 'rgba(255, 26, 104, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 1)',
+                borderColor: 'rgba(75, 192, 192, 1)',
                 borderWidth: 1
             }, {
                 label: 'Sell',
                 data: sellList,
                 // data: [956100,1802300,167500,2811400,603000,1214900,176000,952500,2135600,3275500,1218300,1045100,0,0,4080000],
-                backgroundColor: 'rgba(75, 192, 192, 1)',
-                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(255, 26, 104, 1)',
+                borderColor: 'rgba(255, 26, 104, 1)',
                 borderWidth: 1
             }]
         };
@@ -147,11 +160,12 @@
                         // Print the groupedData
 
                         for (const grpData in result) {
-                            console.log(grpData)
-                            console.log(result[grpData].match_qtt)
+                            //console.log(grpData)
+                            //console.log(result[grpData].match_qtt)
                             if (result[grpData].type === 'buy') {
                                 buyList.push(result[grpData].match_qtt)
-                                labelList.push(result[grpData].date_time)
+                                const dateString = formatDate(result[grpData].date_time);
+                                labelList.push(dateString)
                             } else if (result[grpData].type === 'sell') {
                                 sellList.push(result[grpData].match_qtt)
                             }
