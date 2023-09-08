@@ -81,6 +81,7 @@
         const labelList = [];
         const buyList = [];
         const sellList = [];
+        const volumeList = [];
         // setup 
         const data = {
             labels: labelList,
@@ -91,26 +92,58 @@
                 // data: [1075900, 647300, 284500, 200000, 3013100, 1191700, 0, 593300, 2159100, 4025000, 2111300, 0, 814400, 4734100, 0],
                 backgroundColor: 'rgba(75, 192, 192, 1)',
                 borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1
+                borderWidth: 1,
+                yAxisID: 'y',
+                order: 1
             }, {
                 label: 'Sell',
                 data: sellList,
                 // data: [956100,1802300,167500,2811400,603000,1214900,176000,952500,2135600,3275500,1218300,1045100,0,0,4080000],
                 backgroundColor: 'rgba(255, 26, 104, 1)',
                 borderColor: 'rgba(255, 26, 104, 1)',
-                borderWidth: 1
+                borderWidth: 1,
+                yAxisID: 'y',
+                order: 1
+            }, {
+                label: 'Volume',
+                data: volumeList,
+                // data: [956100,1802300,167500,2811400,603000,1214900,176000,952500,2135600,3275500,1218300,1045100,0,0,4080000],
+                backgroundColor: 'rgba(0, 0, 255, 0.7)',
+                borderColor: 'rgba(0, 0, 255, 0.7)',
+                type: 'line',
+                borderWidth: 3,
+                pointRadius: 3,
+                yAxisID: 'y1',
+                order: 0
             }]
         };
 
         // config 
         const config = {
-            type: 'bar',
-            data,
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
+                type: 'bar',
+                data,
+                options: {
+                    scales: {
+                        // y: {
+                        //     beginAtZero: true
+                        // }
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            beginAtZero: true
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            beginAtZero: true,
+
+                            // grid line settings
+                            grid: {
+                                drawOnChartArea: false, // only want the grid lines for one axis to show up
+                            },
+                        },
                 }
             }
         };
@@ -130,54 +163,115 @@
         function updateValue(e) {
             const symbol = input.value
             if (symbol.length === 3 && symbol !== lastSymbol) {
-                fetch('http://103.82.37.213:8080/v1/order?codes=' + symbol)
-                    .then(response => response.json())
-                    .then(datas => {
-                        labelList.length = 0;
-                        buyList.length = 0;
-                        sellList.length = 0;
-                        // Assign the fetched data to a variable
-                        // Do something with the data
-                        //console.log(dataJson);
-                        const groupedData = new Map();
-                        datas.data.forEach(item => {
-                            groupedData.set(`${item.date_time}-@-buy`, 0);
-                            groupedData.set(`${item.date_time}-@-sell`, 0);
-                        })
-                        datas.data.forEach(item => {
-                            const key = `${item.date_time}-@-${item.type}`;
-                            if (groupedData.has(key)) {
-                                groupedData.set(key, groupedData.get(key) + item.match_qtt);
-                            } else {
-                                //groupedData.set(key, item.match_qtt);
-                            }
-                        });
-                        const result = Array.from(groupedData, ([key, value]) => {
-                            const [date, type] = key.split('-@-');
-                            return { date_time: date, type, match_qtt: value };
-                        });
-                        console.log(result)
-                        // Print the groupedData
-
-                        for (const grpData in result) {
-                            //console.log(grpData)
-                            //console.log(result[grpData].match_qtt)
-                            if (result[grpData].type === 'buy') {
-                                buyList.push(result[grpData].match_qtt)
-                                const dateString = formatDate(result[grpData].date_time);
-                                labelList.push(dateString)
-                            } else if (result[grpData].type === 'sell') {
-                                sellList.push(result[grpData].match_qtt)
-                            }
-                        }
-                        graphData = { Label: labelList, Buy: buyList, Sell: sellList }
-                        myChart.update()
-
+                Promise.all([
+                    fetch('http://103.82.37.213:8080/v1/order?codes=' + symbol).then(response => response.json()),
+                    fetch('http://103.82.37.213:8080/v1/ts?code=' + symbol).then(response => response.json())
+                ]).then(([datas, volumes]) => {
+                    console.log(datas)
+                    console.log(volumes)
+                    labelList.length = 0;
+                    buyList.length = 0;
+                    sellList.length = 0;
+                    volumeList.length = 0;
+                    // Assign the fetched data to a variable
+                    // Do something with the data
+                    //console.log(dataJson);
+                    const groupedData = new Map();
+                    datas.data.forEach(item => {
+                        groupedData.set(`${item.date_time}-@-buy`, 0);
+                        groupedData.set(`${item.date_time}-@-sell`, 0);
                     })
-                    .catch(error => {
-                        // Handle any errors
-                        console.error(error);
+                    datas.data.forEach(item => {
+                        const key = `${item.date_time}-@-${item.type}`;
+                        if (groupedData.has(key)) {
+                            groupedData.set(key, groupedData.get(key) + item.match_qtt);
+                        } else {
+                            //groupedData.set(key, item.match_qtt);
+                        }
                     });
+                    const result = Array.from(groupedData, ([key, value]) => {
+                        const [date, type] = key.split('-@-');
+                        return { date_time: date, type, match_qtt: value };
+                    });
+                    console.log(result)
+                    // Print the groupedData
+
+                    for (const grpData in result) {
+                        //console.log(grpData)
+                        //console.log(result[grpData].match_qtt)
+                        if (result[grpData].type === 'buy') {
+                            buyList.push(result[grpData].match_qtt)
+                            const dateString = formatDate(result[grpData].date_time);
+                            labelList.push(dateString)
+                        } else if (result[grpData].type === 'sell') {
+                            sellList.push(result[grpData].match_qtt)
+                        }
+                    }
+                    let j = 0;
+                    for (const lb of labelList){
+                        console.info(lb);
+                        console.log(volumes.data.data[j].date_time);
+                        if (lb === formatDate(volumes.data.data[j].date_time)){
+                            volumeList.push(volumes.data.data[j++].volume);
+                        }else{
+                            volumeList.push("N/A");
+                        }
+                    }
+                    console.info("Volist", volumeList);
+                    graphData = { Label: labelList, Buy: buyList, Sell: sellList }
+                    myChart.update()
+                }).catch(error => {
+                        // Handle any errors
+                        console.error(error);                    
+                })
+                // fetch('http://103.82.37.213:8080/v1/order?codes=' + symbol)
+                //     .then(response => response.json())
+                //     .then(datas => {
+                //         labelList.length = 0;
+                //         buyList.length = 0;
+                //         sellList.length = 0;
+                //         // Assign the fetched data to a variable
+                //         // Do something with the data
+                //         //console.log(dataJson);
+                //         const groupedData = new Map();
+                //         datas.data.forEach(item => {
+                //             groupedData.set(`${item.date_time}-@-buy`, 0);
+                //             groupedData.set(`${item.date_time}-@-sell`, 0);
+                //         })
+                //         datas.data.forEach(item => {
+                //             const key = `${item.date_time}-@-${item.type}`;
+                //             if (groupedData.has(key)) {
+                //                 groupedData.set(key, groupedData.get(key) + item.match_qtt);
+                //             } else {
+                //                 //groupedData.set(key, item.match_qtt);
+                //             }
+                //         });
+                //         const result = Array.from(groupedData, ([key, value]) => {
+                //             const [date, type] = key.split('-@-');
+                //             return { date_time: date, type, match_qtt: value };
+                //         });
+                //         console.log(result)
+                //         // Print the groupedData
+
+                //         for (const grpData in result) {
+                //             //console.log(grpData)
+                //             //console.log(result[grpData].match_qtt)
+                //             if (result[grpData].type === 'buy') {
+                //                 buyList.push(result[grpData].match_qtt)
+                //                 const dateString = formatDate(result[grpData].date_time);
+                //                 labelList.push(dateString)
+                //             } else if (result[grpData].type === 'sell') {
+                //                 sellList.push(result[grpData].match_qtt)
+                //             }
+                //         }
+                //         graphData = { Label: labelList, Buy: buyList, Sell: sellList }
+                //         myChart.update()
+
+                //     })
+                //     .catch(error => {
+                //         // Handle any errors
+                //         console.error(error);
+                //     });
             }
         }
 
