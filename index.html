@@ -164,8 +164,8 @@
             const symbol = input.value
             if (symbol.length === 3 && symbol !== lastSymbol) {
                 Promise.all([
-                    fetch('http://103.82.37.213:8080/v1/order?codes=' + symbol).then(response => response.json()),
-                    fetch('http://103.82.37.213:8080/v1/ts?code=' + symbol).then(response => response.json())
+                    fetch('https://botck.io.vn:8081/v1/order?codes=' + symbol).then(response => response.json()),
+                    fetch('https://botck.io.vn:8081/v1/ts?code=' + symbol).then(response => response.json())
                 ]).then(([datas, volumes]) => {
                     console.log(datas)
                     console.log(volumes)
