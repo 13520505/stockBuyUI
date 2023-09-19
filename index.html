@@ -172,8 +172,8 @@
                     fetch('https://botck.io.vn:8081/v1/order?codes=' + symbol).then(response => response.json()),
                     fetch('https://botck.io.vn:8081/v1/ts?code=' + symbol).then(response => response.json())
                 ]).then(([datas, volumes]) => {
-                    console.log(datas)
-                    console.log(volumes)
+                    //console.log(datas)
+                    //console.log(volumes)
                     labelList.length = 0;
                     buyList.length = 0;
                     sellList.length = 0;
@@ -198,7 +198,7 @@
                         const [date, type] = key.split('-@-');
                         return { date_time: date, type, match_qtt: value };
                     });
-                    console.log(result)
+                    //console.log(result)
                     // Print the groupedData
 
                     for (const grpData in result) {
@@ -214,23 +214,20 @@
                     }
                     let j = 0;
                     for (const lb of labelList){
-                        console.info("Label="+lb);
-                        console.log(volumes.data.data[j].date_time);
+                        //console.info("Label="+lb);
+                        //console.log(volumes.data.data[j].date_time);
                         const date1 = dateStringToDate(lb);
                         const date2 = new Date(volumes.data.data[j].date_time);
                         if (lb === formatDate(volumes.data.data[j].date_time)){
                             volumeList.push(volumes.data.data[j++].volume);
                         }else {
-                            console.log("Date1"+ date1);
-                            console.log("Date2"+ date2)
-                            console.log("CP"+ (date1 > date2))
                             if (date1 > date2){
                                 j++;
                             }
                             volumeList.push("N/A");
                         }
                     }
-                    console.info("Volist", volumeList);
+                    //console.info("Volist", volumeList);
                     graphData = { Label: labelList, Buy: buyList, Sell: sellList }
                     myChart.update()
                 }).catch(error => {
