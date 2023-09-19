@@ -76,6 +76,11 @@
 
             return formattedDate;
         }
+        function dateStringToDate(dateString){
+            const [day, month, year] = dateString.split("/").map(Number);
+            const date = new Date(year, month - 1, day);
+            return date;
+        }
         // load data json
         var graphData = {};
         const labelList = [];
@@ -209,11 +214,19 @@
                     }
                     let j = 0;
                     for (const lb of labelList){
-                        console.info(lb);
+                        console.info("Label="+lb);
                         console.log(volumes.data.data[j].date_time);
+                        const date1 = dateStringToDate(lb);
+                        const date2 = new Date(volumes.data.data[j].date_time);
                         if (lb === formatDate(volumes.data.data[j].date_time)){
                             volumeList.push(volumes.data.data[j++].volume);
-                        }else{
+                        }else {
+                            console.log("Date1"+ date1);
+                            console.log("Date2"+ date2)
+                            console.log("CP"+ (date1 > date2))
+                            if (date1 > date2){
+                                j++;
+                            }
                             volumeList.push("N/A");
                         }
                     }
